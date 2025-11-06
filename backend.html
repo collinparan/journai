@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JournAI - Dispatch Backend</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Brand Colors - JournAI Theme */
+            --primary: #0048bb;
+            --primary-dark: #003a99;
+            --primary-light: #1a5ed4;
+            --accent: #66ff99;
+            --accent-dark: #4de080;
+
+            /* Neutral Colors (60%) */
+            --white: #ffffff;
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #eeeeee;
+
+            /* Text Colors */
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --text-light: #9e9e9e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background: var(--white);
+            color: var(--text-primary);
+            line-height: 1.6;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Subtle background texture */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(0, 72, 187, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(102, 255, 153, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header with staggered animation */
+        header {
+            background: var(--primary);
+            color: var(--white);
+            padding: 40px 30px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 72, 187, 0.15);
+            animation: slideDown 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 60%;
+            height: 200%;
+            background: radial-gradient(ellipse, rgba(102, 255, 153, 0.15) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-30px, 30px) rotate(5deg); }
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.1s backwards;
+        }
+
+        .logo-container img {
+            height: 50px;
+            width: auto;
+            filter: brightness(0) invert(1);
+        }
+
+        header h1 {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 3em;
+            font-weight: 700;
+            letter-spacing: -1px;
+            position: relative;
+            display: inline-block;
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s backwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        header h1::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 80px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+            font-weight: 400;
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.4s backwards;
+        }
+
+        .card {
+            background: var(--white);
+            padding: 35px;
+            margin-bottom: 30px;
+            box-shadow:
+                0 1px 3px rgba(0, 72, 187, 0.08),
+                0 4px 12px rgba(0, 72, 187, 0.05);
+            border-radius: 16px;
+            border: 1px solid var(--gray-200);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.6s backwards;
+        }
+
+        .card:hover {
+            box-shadow:
+                0 8px 24px rgba(0, 72, 187, 0.12),
+                0 16px 48px rgba(0, 72, 187, 0.08);
+            transform: translateY(-4px);
+        }
+
+        .card h2 {
+            margin-bottom: 25px;
+            color: var(--primary);
+            font-size: 1.8em;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.95em;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--gray-200);
+            background: var(--gray-50);
+            font-size: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-primary);
+            border-radius: 8px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--white);
+            box-shadow: 0 0 0 4px rgba(0, 72, 187, 0.1);
+        }
+
+        button {
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            padding: 16px 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            margin-right: 10px;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 72, 187, 0.25);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .technician-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .tech-card {
+            background: var(--gray-50);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .tech-card:hover {
+            border-left-color: var(--accent);
+            background: var(--white);
+            box-shadow: 0 4px 12px rgba(0, 72, 187, 0.12);
+            transform: translateX(4px);
+        }
+
+        .tech-card.selected {
+            border-left-color: var(--accent);
+            background: linear-gradient(135deg, rgba(102, 255, 153, 0.1) 0%, var(--white) 100%);
+            box-shadow: 0 4px 12px rgba(0, 72, 187, 0.12);
+        }
+
+        .tech-name {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .tech-type {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .tech-type.w2 {
+            background: var(--accent);
+            color: var(--primary-dark);
+        }
+
+        .tech-type.contractor {
+            background: #ffd54f;
+            color: #f57c00;
+        }
+
+        .tech-details {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .url-output {
+            background: var(--gray-100);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid var(--accent);
+            margin-top: 20px;
+            font-family: 'IBM Plex Mono', monospace;
+            word-break: break-all;
+            display: none;
+        }
+
+        .url-output.show {
+            display: block;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .url-output h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .url-text {
+            background: var(--white);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.95em;
+            margin-bottom: 15px;
+            color: var(--primary);
+            cursor: pointer;
+        }
+
+        .url-text:hover {
+            background: var(--gray-50);
+        }
+
+        .copy-btn {
+            background: var(--accent);
+            color: var(--primary-dark);
+        }
+
+        .copy-btn:hover {
+            background: var(--accent-dark);
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            margin-top: 15px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+
+            .technician-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo-container">
+                    <img src="https://www.searshomeservices.com/static/icons/general/shs-logo.svg" alt="Sears Home Services" onerror="this.style.display='none'">
+                </div>
+                <h1>JournAI Dispatch</h1>
+            </div>
+            <p>Assign technicians and generate dispatch URLs</p>
+        </header>
+
+        <div class="card">
+            <h2>📍 Customer Job Details</h2>
+            <div class="form-group">
+                <label for="customerAddress">Customer Address</label>
+                <input type="text" id="customerAddress" placeholder="123 Main St, Chicago, IL 60601">
+            </div>
+            <div class="form-group">
+                <label for="customerLat">Latitude (optional - will geocode from address if empty)</label>
+                <input type="text" id="customerLat" placeholder="41.8781">
+            </div>
+            <div class="form-group">
+                <label for="customerLng">Longitude (optional - will geocode from address if empty)</label>
+                <input type="text" id="customerLng" placeholder="-87.6298">
+            </div>
+            <div class="form-group">
+                <label for="jobDescription">Job Description</label>
+                <textarea id="jobDescription" rows="3" placeholder="Washer/Dryer repair - Unit not spinning"></textarea>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>👥 Select Technician</h2>
+            <div id="technicianList" class="technician-list">
+                <!-- Technicians will be loaded here -->
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📤 Generate Dispatch URL</h2>
+            <button onclick="generateDispatchURL()">🚀 Generate URL</button>
+
+            <div id="urlOutput" class="url-output">
+                <h3>✓ Dispatch URL Generated</h3>
+                <div class="url-text" id="urlText" onclick="copyURL()">
+                    <!-- URL will appear here -->
+                </div>
+                <button class="copy-btn" onclick="copyURL()">📋 Copy URL</button>
+                <button onclick="sendSMS()">📱 Send via SMS</button>
+                <div id="successMessage" class="success-message">
+                    ✓ URL copied to clipboard!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample technician data
+        const technicians = [
+            {
+                id: 'TECH-001',
+                name: 'Alice Johnson',
+                type: 'W2',
+                skills: ['HVAC', 'Electrical'],
+                phone: '+1-312-555-0101',
+                rating: 4.9
+            },
+            {
+                id: 'TECH-002',
+                name: 'Bob Martinez',
+                type: '1099',
+                skills: ['Appliance Repair', 'Plumbing'],
+                phone: '+1-312-555-0102',
+                rating: 4.7
+            },
+            {
+                id: 'TECH-003',
+                name: 'Carol Davis',
+                type: 'W2',
+                skills: ['Washer/Dryer', 'Dishwasher'],
+                phone: '+1-312-555-0103',
+                rating: 4.8
+            },
+            {
+                id: 'TECH-004',
+                name: 'David Chen',
+                type: '1099',
+                skills: ['HVAC', 'Refrigeration'],
+                phone: '+1-312-555-0104',
+                rating: 4.6
+            },
+            {
+                id: 'TECH-005',
+                name: 'Emma Wilson',
+                type: 'W2',
+                skills: ['Electrical', 'Appliance Repair'],
+                phone: '+1-312-555-0105',
+                rating: 4.9
+            },
+            {
+                id: 'TECH-006',
+                name: 'Frank Thompson',
+                type: '1099',
+                skills: ['Plumbing', 'Water Heater'],
+                phone: '+1-312-555-0106',
+                rating: 4.5
+            }
+        ];
+
+        let selectedTechnician = null;
+
+        // Load technicians on page load
+        function loadTechnicians() {
+            const listContainer = document.getElementById('technicianList');
+
+            technicians.forEach(tech => {
+                const techCard = document.createElement('div');
+                techCard.className = 'tech-card';
+                techCard.onclick = () => selectTechnician(tech.id);
+
+                const typeClass = tech.type === 'W2' ? 'w2' : 'contractor';
+
+                techCard.innerHTML = `
+                    <div class="tech-name">${tech.name}</div>
+                    <span class="tech-type ${typeClass}">${tech.type} ${tech.type === '1099' ? 'Contractor' : 'Employee'}</span>
+                    <div class="tech-details">
+                        <div><strong>ID:</strong> ${tech.id}</div>
+                        <div><strong>Skills:</strong> ${tech.skills.join(', ')}</div>
+                        <div><strong>Phone:</strong> ${tech.phone}</div>
+                        <div><strong>Rating:</strong> ⭐ ${tech.rating}/5.0</div>
+                    </div>
+                `;
+                techCard.id = `tech-${tech.id}`;
+
+                listContainer.appendChild(techCard);
+            });
+        }
+
+        // Select a technician
+        function selectTechnician(techId) {
+            // Remove previous selection
+            document.querySelectorAll('.tech-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Add selection to clicked card
+            document.getElementById(`tech-${techId}`).classList.add('selected');
+
+            // Store selected technician
+            selectedTechnician = technicians.find(t => t.id === techId);
+        }
+
+        // Generate dispatch URL
+        async function generateDispatchURL() {
+            if (!selectedTechnician) {
+                alert('Please select a technician first');
+                return;
+            }
+
+            const address = document.getElementById('customerAddress').value.trim();
+            let lat = document.getElementById('customerLat').value.trim();
+            let lng = document.getElementById('customerLng').value.trim();
+
+            if (!address && (!lat || !lng)) {
+                alert('Please provide either an address or coordinates');
+                return;
+            }
+
+            // If no coordinates provided, geocode the address
+            if (!lat || !lng) {
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+                    const data = await response.json();
+
+                    if (data.length === 0) {
+                        alert('Could not geocode address. Please provide coordinates manually.');
+                        return;
+                    }
+
+                    lat = data[0].lat;
+                    lng = data[0].lon;
+                } catch (error) {
+                    alert('Error geocoding address: ' + error.message);
+                    return;
+                }
+            }
+
+            // Get job description
+            const jobDescription = document.getElementById('jobDescription').value.trim() || 'Service call';
+
+            // Generate URL
+            const baseURL = window.location.origin + window.location.pathname.replace('backend.html', 'index.html');
+            const dispatchURL = `${baseURL}?lat=${lat}&lng=${lng}&address=${encodeURIComponent(address)}&tech=${selectedTechnician.id}&job=${encodeURIComponent(jobDescription)}`;
+
+            // Display URL
+            document.getElementById('urlText').textContent = dispatchURL;
+            document.getElementById('urlOutput').classList.add('show');
+        }
+
+        // Copy URL to clipboard
+        function copyURL() {
+            const urlText = document.getElementById('urlText').textContent;
+            navigator.clipboard.writeText(urlText).then(() => {
+                const successMsg = document.getElementById('successMessage');
+                successMsg.classList.add('show');
+                setTimeout(() => {
+                    successMsg.classList.remove('show');
+                }, 3000);
+            });
+        }
+
+        // Send via SMS (placeholder)
+        function sendSMS() {
+            if (!selectedTechnician) {
+                alert('Please select a technician first');
+                return;
+            }
+
+            const urlText = document.getElementById('urlText').textContent;
+            const message = `New dispatch assignment! Click to accept: ${urlText}`;
+
+            // Open SMS app (this works on mobile devices)
+            window.location.href = `sms:${selectedTechnician.phone}?body=${encodeURIComponent(message)}`;
+
+            alert(`Opening SMS to ${selectedTechnician.name} (${selectedTechnician.phone})`);
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            loadTechnicians();
+        };
+    </script>
+</body>
+</html>

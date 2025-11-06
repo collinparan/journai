@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JournAI - Intelligent Journey Planning</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Leaflet for mapping -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- H3 JavaScript library -->
+    <script src="https://cdn.jsdelivr.net/npm/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+
+    <style>
+        :root {
+            /* Brand Colors - JournAI Theme */
+            --primary: #0048bb;
+            --primary-dark: #003a99;
+            --primary-light: #1a5ed4;
+            --accent: #66ff99;
+            --accent-dark: #4de080;
+
+            /* Neutral Colors (60%) */
+            --white: #ffffff;
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #eeeeee;
+
+            /* Text Colors */
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --text-light: #9e9e9e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, sans-serif;
+            background: var(--white);
+            color: var(--text-primary);
+            line-height: 1.6;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Subtle background texture */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 50%, rgba(0, 72, 187, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(102, 255, 153, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header with staggered animation */
+        header {
+            background: var(--primary);
+            color: var(--white);
+            padding: 40px 30px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 72, 187, 0.15);
+            animation: slideDown 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 60%;
+            height: 200%;
+            background: radial-gradient(ellipse, rgba(102, 255, 153, 0.15) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-30px, 30px) rotate(5deg); }
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.1s backwards;
+        }
+
+        .logo-container img {
+            height: 50px;
+            width: auto;
+            filter: brightness(0) invert(1);
+        }
+
+        header h1 {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 3em;
+            font-weight: 700;
+            letter-spacing: -1px;
+            position: relative;
+            display: inline-block;
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s backwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        header h1::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 80px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+            font-weight: 400;
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.4s backwards;
+        }
+
+        .card {
+            background: var(--white);
+            padding: 35px;
+            margin-bottom: 30px;
+            box-shadow:
+                0 1px 3px rgba(0, 72, 187, 0.08),
+                0 4px 12px rgba(0, 72, 187, 0.05);
+            border-radius: 16px;
+            border: 1px solid var(--gray-200);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.6s backwards;
+        }
+
+        .card:hover {
+            box-shadow:
+                0 8px 24px rgba(0, 72, 187, 0.12),
+                0 16px 48px rgba(0, 72, 187, 0.08);
+            transform: translateY(-4px);
+        }
+
+        .card h2 {
+            margin-bottom: 25px;
+            color: var(--primary);
+            font-size: 1.8em;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.95em;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--gray-200);
+            background: var(--gray-50);
+            font-size: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-primary);
+            border-radius: 8px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--white);
+            box-shadow: 0 0 0 4px rgba(0, 72, 187, 0.1);
+        }
+
+        button {
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            padding: 16px 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 72, 187, 0.25);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #map {
+            height: 600px;
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 72, 187, 0.08);
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.8s backwards;
+        }
+
+        .info-box {
+            background: var(--gray-50);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 20px;
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 1s backwards;
+        }
+
+        .info-box h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .info-box p {
+            margin-bottom: 5px;
+            font-size: 0.95em;
+        }
+
+        .status {
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .status.info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border-left: 4px solid #1565c0;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid var(--accent);
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+
+            #map {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo-container">
+                    <img src="https://www.searshomeservices.com/static/icons/general/shs-logo.svg" alt="Sears Home Services" onerror="this.style.display='none'">
+                </div>
+                <h1>JournAI</h1>
+            </div>
+            <p>Intelligent journey planning with H3 geospatial indexing</p>
+        </header>
+
+        <div class="card" id="statusCard">
+            <h2>📍 Dispatch Assignment</h2>
+            <div id="statusMessage" class="status info">
+                Preparing dispatch information...
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Map View</h2>
+            <div id="map"></div>
+        </div>
+
+        <div class="card" id="routeCard" style="display: none;">
+            <h2>📋 Details</h2>
+            <div class="info-box" style="margin-bottom: 20px;">
+                <h3>Job Details</h3>
+                <p id="jobDetails"><strong>Loading...</strong></p>
+            </div>
+            <div class="info-box" style="margin-bottom: 20px;">
+                <h3>Destination</h3>
+                <p id="destinationAddress"><strong>Loading...</strong></p>
+            </div>
+            <div class="info-box">
+                <h3>Estimated Arrival</h3>
+                <p><strong>Distance:</strong> <span id="routeDistance">-</span></p>
+                <p><strong>Travel Time:</strong> <span id="routeTime">-</span></p>
+                <p><strong>ETA:</strong> <span id="eta">-</span></p>
+            </div>
+        </div>
+
+        <div class="card" id="infoCard" style="display: none;">
+            <div class="info-box">
+                <h3>Technical Details</h3>
+                <p><strong>Your Latitude:</strong> <span id="currentLat">-</span></p>
+                <p><strong>Your Longitude:</strong> <span id="currentLng">-</span></p>
+                <p><strong>Your H3 Index:</strong> <span id="h3Index">-</span></p>
+                <p><strong>Destination H3:</strong> <span id="destH3">-</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let userMarker;
+        let destinationMarker;
+        let routeLayer;
+        let currentPosition = null;
+        let h3;
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([41.8781, -87.6298], 10);
+
+            // Use CartoDB Voyager tiles - cleaner, Google Maps-like appearance
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors © CARTO',
+                maxZoom: 19
+            }).addTo(map);
+        }
+
+        // Get user's current location and prompt for job acceptance
+        function getUserLocation() {
+            const statusDiv = document.getElementById('statusMessage');
+
+            if (!navigator.geolocation) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = 'Geolocation is not supported by your browser';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    currentPosition = { lat, lng };
+
+                    // Update technical details
+                    document.getElementById('currentLat').textContent = lat.toFixed(6);
+                    document.getElementById('currentLng').textContent = lng.toFixed(6);
+
+                    // Calculate H3 index (resolution 12 for ~0.9m² hexagons)
+                    let h3Index = 'N/A';
+                    if (h3 && h3.latLngToCell) {
+                        h3Index = h3.latLngToCell(lat, lng, 12);
+                    }
+                    document.getElementById('h3Index').textContent = h3Index;
+
+                    // Add marker to map
+                    if (userMarker) {
+                        map.removeLayer(userMarker);
+                    }
+
+                    userMarker = L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            className: 'custom-marker',
+                            html: '<div style="background: #0048bb; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                            iconSize: [20, 20]
+                        })
+                    }).addTo(map);
+
+                    userMarker.bindPopup(`<b>Your Location</b><br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`);
+
+                    // Visualize H3 cell
+                    visualizeH3Cell(h3Index);
+
+                    // Center map on user
+                    map.setView([lat, lng], 13);
+
+                    // Now prompt for job acceptance
+                    promptJobAcceptance();
+                },
+                (error) => {
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = `Error getting location: ${error.message}`;
+                }
+            );
+        }
+
+        // Prompt technician to accept the job
+        async function promptJobAcceptance() {
+            const params = new URLSearchParams(window.location.search);
+            const destination = params.get('address') || params.get('lat') && params.get('lng') ? `${params.get('lat')},${params.get('lng')}` : null;
+            const address = params.get('address') || 'Customer Location';
+            const jobDescription = params.get('job') || 'Service call';
+            const techId = params.get('tech') || 'Unknown';
+
+            // Store job description globally for later display
+            window.currentJobDescription = jobDescription;
+
+            if (!destination) {
+                const statusDiv = document.getElementById('statusMessage');
+                statusDiv.className = 'status error';
+                statusDiv.textContent = 'No destination provided in URL. Please provide ?address=... or ?lat=...&lng=...';
+                return;
+            }
+
+            // Calculate distance first to show in prompt
+            let distanceInfo = '';
+            if (currentPosition) {
+                try {
+                    let destLat, destLng;
+
+                    // Parse destination
+                    if (destination.includes(',')) {
+                        const parts = destination.split(',');
+                        destLat = parseFloat(parts[0].trim());
+                        destLng = parseFloat(parts[1].trim());
+                    } else {
+                        // Geocode address
+                        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destination)}`);
+                        const data = await response.json();
+                        if (data.length > 0) {
+                            destLat = parseFloat(data[0].lat);
+                            destLng = parseFloat(data[0].lon);
+                        }
+                    }
+
+                    if (destLat && destLng) {
+                        // Quick distance calculation using OSRM
+                        const routeResponse = await fetch(`https://router.project-osrm.org/route/v1/driving/${currentPosition.lng},${currentPosition.lat};${destLng},${destLat}?overview=false`);
+                        const routeData = await routeResponse.json();
+
+                        if (routeData.code === 'Ok' && routeData.routes.length > 0) {
+                            const distanceMiles = (routeData.routes[0].distance * 0.621371 / 1000).toFixed(1);
+                            const durationMinutes = Math.round(routeData.routes[0].duration / 60);
+                            distanceInfo = `\n📍 Distance: ${distanceMiles} miles (~${durationMinutes} min drive)`;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error calculating distance:', error);
+                }
+            }
+
+            // Create simple alert-style confirmation
+            const jobDetails = `NEW DISPATCH ASSIGNMENT
+
+Job: ${jobDescription}
+
+Location: ${address}${distanceInfo}
+
+Assigned To: ${techId}
+
+Before accepting, ensure you have:
+✓ Required parts/tools in truck
+✓ Skills to complete this job
+✓ Availability to arrive on time
+
+Click OK to TAKE JOB
+Click Cancel to DECLINE JOB`;
+
+            const accept = confirm(jobDetails);
+
+            if (accept) {
+                calculateRoute(destination);
+            } else {
+                const statusDiv = document.getElementById('statusMessage');
+                statusDiv.className = 'status info';
+                statusDiv.textContent = '❌ Job declined. Contact dispatch if you have questions.';
+            }
+        }
+
+        // Visualize H3 hexagon cell
+        function visualizeH3Cell(h3Index) {
+            if (!h3 || !h3.cellToBoundary || h3Index === 'N/A') {
+                return; // Skip if H3 not available
+            }
+
+            const boundary = h3.cellToBoundary(h3Index);
+            const latLngs = boundary.map(coord => [coord[0], coord[1]]);
+
+            L.polygon(latLngs, {
+                color: '#66ff99',
+                fillColor: '#66ff99',
+                fillOpacity: 0.2,
+                weight: 2
+            }).addTo(map).bindPopup(`<b>H3 Cell</b><br>${h3Index}`);
+        }
+
+        // Calculate route to destination
+        async function calculateRoute(destinationParam) {
+            const destination = destinationParam || document.getElementById('destination')?.value.trim();
+
+            if (!destination) {
+                alert('Please enter a destination');
+                return;
+            }
+
+            if (!currentPosition) {
+                alert('Please get your location first');
+                return;
+            }
+
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = 'status info';
+            statusDiv.textContent = '🗺️ Calculating route...';
+
+            // Parse destination (address or coordinates)
+            let destLat, destLng;
+
+            // Check if it's coordinates (lat,lng)
+            if (destination.includes(',')) {
+                const parts = destination.split(',');
+                destLat = parseFloat(parts[0].trim());
+                destLng = parseFloat(parts[1].trim());
+
+                if (isNaN(destLat) || isNaN(destLng)) {
+                    alert('Invalid coordinates format. Use: lat,lng');
+                    return;
+                }
+            } else {
+                // Geocode address using Nominatim
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destination)}`);
+                    const data = await response.json();
+
+                    if (data.length === 0) {
+                        alert('Address not found');
+                        return;
+                    }
+
+                    destLat = parseFloat(data[0].lat);
+                    destLng = parseFloat(data[0].lon);
+                } catch (error) {
+                    alert('Error geocoding address: ' + error.message);
+                    return;
+                }
+            }
+
+            // Add destination marker
+            if (destinationMarker) {
+                map.removeLayer(destinationMarker);
+            }
+
+            destinationMarker = L.marker([destLat, destLng], {
+                icon: L.divIcon({
+                    className: 'custom-marker',
+                    html: '<div style="background: #c62828; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [20, 20]
+                })
+            }).addTo(map);
+
+            let destH3 = 'N/A';
+            if (h3 && h3.latLngToCell) {
+                destH3 = h3.latLngToCell(destLat, destLng, 12);
+            }
+            document.getElementById('destH3').textContent = destH3;
+
+            destinationMarker.bindPopup(`<b>Customer Location</b><br>Lat: ${destLat.toFixed(6)}<br>Lng: ${destLng.toFixed(6)}`);
+
+            // Update job details display
+            document.getElementById('jobDetails').innerHTML = window.currentJobDescription || 'Service call';
+
+            // Update destination display
+            document.getElementById('destinationAddress').innerHTML = `<strong>${destination}</strong><br>Lat: ${destLat.toFixed(6)}, Lng: ${destLng.toFixed(6)}`;
+
+            // Visualize destination H3 cell
+            visualizeH3Cell(destH3);
+
+            // Get route from OSRM
+            try {
+                const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${currentPosition.lng},${currentPosition.lat};${destLng},${destLat}?overview=full&geometries=geojson`);
+                const data = await response.json();
+
+                if (data.code !== 'Ok') {
+                    alert('Could not calculate route');
+                    return;
+                }
+
+                // Remove old route
+                if (routeLayer) {
+                    map.removeLayer(routeLayer);
+                }
+
+                // Draw route
+                const route = data.routes[0];
+                routeLayer = L.geoJSON(route.geometry, {
+                    style: {
+                        color: '#0048bb',
+                        weight: 4,
+                        opacity: 0.7
+                    }
+                }).addTo(map);
+
+                // Fit map to show entire route
+                const bounds = L.latLngBounds([
+                    [currentPosition.lat, currentPosition.lng],
+                    [destLat, destLng]
+                ]);
+                map.fitBounds(bounds, { padding: [50, 50] });
+
+                // Calculate ETA
+                const distanceMiles = (route.distance * 0.621371 / 1000).toFixed(2);
+                const durationMinutes = Math.round(route.duration / 60);
+                const now = new Date();
+                const eta = new Date(now.getTime() + route.duration * 1000);
+                const etaString = eta.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+                // Update route info card
+                document.getElementById('routeDistance').textContent = `${distanceMiles} miles`;
+                document.getElementById('routeTime').textContent = `${durationMinutes} minutes`;
+                document.getElementById('eta').textContent = etaString;
+
+                // Show route card and update status
+                document.getElementById('routeCard').style.display = 'block';
+                document.getElementById('infoCard').style.display = 'block';
+
+                const statusDiv = document.getElementById('statusMessage');
+                statusDiv.className = 'status success';
+                statusDiv.textContent = `✓ Job accepted! Navigate to customer location. ETA: ${etaString}`;
+            } catch (error) {
+                alert('Error calculating route: ' + error.message);
+            }
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            // Initialize h3 library (check if it exists)
+            if (typeof h3js !== 'undefined') {
+                h3 = h3js;
+            } else if (typeof window.h3 !== 'undefined') {
+                h3 = window.h3;
+            } else {
+                console.error('H3 library not loaded. H3 features will be disabled.');
+            }
+
+            initMap();
+
+            // Automatically get location on page load
+            getUserLocation();
+        };
+    </script>
+</body>
+</html>
